@@ -80,6 +80,7 @@ class HiFiGANGenerator(nn.Module):
     def __init__(self, cfg: VocoderConfig):
         super().__init__()
         ch = cfg.initial_channels
+        self._n_mels = cfg.n_mels
 
         self.pre = nn.Conv1d(cfg.n_mels, ch, 7, padding=3)
 
@@ -120,8 +121,9 @@ class HiFiGANGenerator(nn.Module):
         Returns:
             audio: (B, 1, T_audio)
         """
-        # Accept (B, T, n_mels) and convert
-        if mel.dim() == 3 and mel.shape[-1] != mel.shape[1]:
+        # Accept (B, T_mel, n_mels) and convert to (B, n_mels, T_mel)
+        # n_mels is always 80 per config; use that to detect layout
+        if mel.dim() == 3 and mel.shape[1] != self._n_mels:
             mel = mel.transpose(1, 2)  # -> (B, n_mels, T)
 
         x = self.pre(mel)
