@@ -107,8 +107,8 @@ nanovox --info
 
 | Variant | Parameters | Size on Disk | RTF (i7 CPU) | RTF (Pi 4) | Quality |
 |---------|-----------|-------------|-------------|-----------|---------|
-| `nano` | ~14M | ~18 MB | 0.08x | 0.7x | Good |
-| `small` | ~40M | ~52 MB | 0.22x | 2.1x | Better |
+| `nano` | ~11M | ~14 MB | 0.08x | 0.7x | Good |
+| `small` | ~41M | ~52 MB | 0.22x | 2.1x | Better |
 
 RTF = Real-Time Factor (lower = faster). RTF < 1.0 means faster than real-time.
 

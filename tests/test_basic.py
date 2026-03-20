@@ -88,15 +88,15 @@ def test_nano_param_count():
     model = build_nano_model()
     count = model.count_parameters()
     # Should be somewhere between 5M and 20M
-    assert 2_000_000 < count < 25_000_000, f"Unexpected param count: {count}"
+    assert 5_000_000 < count < 20_000_000, f"Unexpected param count: {count}"
 
 
 def test_small_param_count():
     from nanovox.model import build_small_model
     model = build_small_model()
     count = model.count_parameters()
-    # Should be somewhere between 15M and 60M
-    assert 10_000_000 < count < 60_000_000, f"Unexpected param count: {count}"
+    # Should be somewhere between 30M and 60M
+    assert 30_000_000 < count < 60_000_000, f"Unexpected param count: {count}"
 
 
 def test_vocoder_forward():

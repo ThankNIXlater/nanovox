@@ -77,20 +77,21 @@ class NanoVoxConfig:
 
 NANO_CONFIG = NanoVoxConfig(
     model_name="nano",
+    # ~14M params total (TTS + vocoder)
     encoder=TextEncoderConfig(
         vocab_size=512,
-        d_model=192,
-        num_heads=4,
-        num_layers=3,
-        d_ff=768,
+        d_model=320,
+        num_heads=8,
+        num_layers=4,
+        d_ff=1280,
         max_seq_len=512,
         dropout=0.1,
     ),
     decoder=MelDecoderConfig(
-        d_model=192,
-        num_heads=4,
-        num_layers=3,
-        d_ff=768,
+        d_model=320,
+        num_heads=8,
+        num_layers=4,
+        d_ff=1280,
         n_mels=80,
         max_mel_len=1024,
         dropout=0.1,
@@ -103,20 +104,21 @@ NANO_CONFIG = NanoVoxConfig(
 
 SMALL_CONFIG = NanoVoxConfig(
     model_name="small",
+    # ~40M params total (TTS + vocoder)
     encoder=TextEncoderConfig(
         vocab_size=512,
-        d_model=384,
-        num_heads=6,
+        d_model=512,
+        num_heads=8,
         num_layers=6,
-        d_ff=1536,
+        d_ff=2048,
         max_seq_len=512,
         dropout=0.1,
     ),
     decoder=MelDecoderConfig(
-        d_model=384,
-        num_heads=6,
+        d_model=512,
+        num_heads=8,
         num_layers=6,
-        d_ff=1536,
+        d_ff=2048,
         n_mels=80,
         max_mel_len=1024,
         dropout=0.1,
