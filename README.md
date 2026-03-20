@@ -3,294 +3,157 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PyPI version](https://img.shields.io/pypi/v/nanovox.svg)](https://pypi.org/project/nanovox/)
-[![CI](https://github.com/ThankNIXlater/nanovox/actions/workflows/ci.yml/badge.svg)](https://github.com/ThankNIXlater/nanovox/actions)
 [![CPU Only](https://img.shields.io/badge/runs%20on-CPU%20only-green.svg)](https://github.com/ThankNIXlater/nanovox)
-[![Model: 14M](https://img.shields.io/badge/nano-14M%20params-orange)](https://github.com/ThankNIXlater/nanovox/releases)
-[![Model: 40M](https://img.shields.io/badge/small-40M%20params-red)](https://github.com/ThankNIXlater/nanovox/releases)
 
-**Lightweight, open-source TTS that runs on any CPU. No GPU. No cloud. No nonsense.**
-
-NanoVox is a transformer-based text-to-speech library with two model variants designed for production use on resource-constrained hardware - laptops, Raspberry Pis, edge devices, CI servers, whatever you have.
+**One line of Python. Real human speech. Any CPU. No API keys.**
 
 ```python
 from nanovox import speak
-speak("Hello world", output="hello.wav")
+speak("Ship voice to production without a GPU.", output="demo.wav")
 ```
+
+That's it. No cloud accounts, no GPU drivers, no 10GB model downloads. Works on laptops, Raspberry Pis, CI servers, Docker containers - anything with Python.
 
 ---
 
 ## Why NanoVox?
 
-Most TTS systems require a GPU, gigabytes of model weights, or a cloud API.
-NanoVox was built for the opposite use case:
+Every TTS solution makes you choose: quality (needs GPU + cloud) or convenience (sounds robotic).
 
-- **CPU-only by design** - runs on any machine with Python and PyTorch
-- **Two sizes** - pick speed (14M) or quality (40M), both fit on a thumb drive
-- **Zero friction** - one import, one function call
-- **Open weights** - MIT licensed, inspect or fine-tune freely
-- **No API keys** - fully offline after the initial weight download
+NanoVox skips the tradeoff:
+
+- **CPU-only** - no CUDA, no GPU, no cloud
+- **Three quality tiers** - pick your speed/quality balance
+- **One function call** - `speak("text")` and you're done
+- **Auto-downloads models** - first run fetches weights, then it's offline forever
+- **MIT licensed** - use it anywhere, modify freely
+- **No API keys** - fully local after first download
+
+Built on [Piper](https://github.com/rhasspy/piper) ONNX models with a clean Python wrapper that handles everything.
 
 ---
 
-## Installation
+## Install
 
 ```bash
 pip install nanovox
 ```
 
-For better audio quality (recommended):
-
-```bash
-pip install nanovox[audio]
-```
-
-From source:
-
-```bash
-git clone https://github.com/ThankNIXlater/nanovox
-cd nanovox
-pip install -e ".[dev,audio]"
-```
+Requires `piper-tts` (installed automatically). Python 3.8+.
 
 ---
 
 ## Quick Start
 
-### Python API
+### Python
 
 ```python
 from nanovox import speak
 
-# Synthesize and save
+# Default (nano model - fastest)
 speak("Hello world", output="hello.wav")
 
-# Change model and speed
-speak("A longer sentence here.", output="out.wav", model="small", speed=0.9)
-```
+# Better quality
+speak("Production-grade speech.", output="out.wav", model="small")
 
-### Advanced usage
+# Best quality
+speak("Crystal clear narration.", output="out.wav", model="high")
 
-```python
-from nanovox import NanoVoxTTS
-
-tts = NanoVoxTTS(model="small")
-tts.speak("NanoVox is fast and runs offline.", output="demo.wav")
-
-# Reuse instance for batch synthesis (weights stay loaded)
-lines = ["Line one.", "Line two.", "Line three."]
-for i, line in enumerate(lines):
-    tts.speak(line, output=f"line_{i}.wav")
+# Adjust speed
+speak("Slow and clear.", output="out.wav", model="small", speed=0.85)
 ```
 
 ### CLI
 
 ```bash
-# Basic
 nanovox "Hello world"
-
-# Specify output file
-nanovox "Hello world" -o hello.wav
-
-# Use the larger model at 90% speed
-nanovox "The quick brown fox" --model small --speed 0.9
-
-# Pipe from stdin
-echo "Hello from stdin" | nanovox -o from_stdin.wav
-
-# Check model sizes and configs
-nanovox --info
+nanovox "Hello world" -o hello.wav --model high
+echo "Pipe from stdin" | nanovox -o piped.wav
+nanovox --info  # Show available models
 ```
 
 ---
 
-## Model Comparison
+## Models
 
-| Variant | Parameters | Size on Disk | RTF (i7 CPU) | RTF (Pi 4) | Quality |
-|---------|-----------|-------------|-------------|-----------|---------|
-| `nano` | ~11M | ~14 MB | 0.08x | 0.7x | Good |
-| `small` | ~41M | ~52 MB | 0.22x | 2.1x | Better |
+| Model | Quality | Download Size | Best For |
+|-------|---------|--------------|----------|
+| `nano` | Good | ~15 MB | Prototyping, notifications, CI pipelines |
+| `small` | Better | ~61 MB | Voice assistants, content generation |
+| `high` | Best | ~109 MB | Narration, podcasts, production audio |
 
-RTF = Real-Time Factor (lower = faster). RTF < 1.0 means faster than real-time.
+Models auto-download on first use to `~/.cache/nanovox/voices/`. After that, fully offline.
 
-The nano model generates a 5-second clip in under half a second on a modern laptop.
-
----
-
-## Architecture
-
-NanoVox uses a non-autoregressive (parallel) architecture for fast inference:
-
-```
-Input Text
-    |
-    v
-+------------------+
-|  CharTokenizer   |  Text normalization, number expansion
-+------------------+
-    |
-    v  (B, T_text)
-+------------------+
-|  TextEncoder     |  Transformer encoder (3-6 layers)
-|  (Transformer)   |  Sinusoidal positional encoding
-+------------------+
-    |
-    v  (B, T_text, d_model)
-+------------------+
-|  DurationPredict |  Conv net, predicts per-token frame counts
-+------------------+
-    |  durations
-+------------------+
-|  LengthRegulator |  Expand encoder output to mel frame count
-+------------------+
-    |
-    v  (B, T_mel, d_model)
-+------------------+
-|  MelDecoder      |  Transformer encoder (3-6 layers)
-|  (Transformer)   |  Projects to mel spectrogram (80 bins)
-+------------------+
-    |
-    v  (B, 80, T_mel)
-+------------------+
-|  HiFi-GAN Vocoder|  Transposed conv upsampling
-|  (lightweight)   |  Multi-receptive-field fusion
-+------------------+
-    |
-    v  (B, 1, T_audio)
-  WAV file
-```
-
-### Nano model (14M params)
-
-| Component | Layers | d_model | Heads | d_ff |
-|-----------|--------|---------|-------|------|
-| Encoder | 3 | 192 | 4 | 768 |
-| Decoder | 3 | 192 | 4 | 768 |
-| Vocoder | - | - | - | ch=64 |
-
-### Small model (40M params)
-
-| Component | Layers | d_model | Heads | d_ff |
-|-----------|--------|---------|-------|------|
-| Encoder | 6 | 384 | 6 | 1536 |
-| Decoder | 6 | 384 | 6 | 1536 |
-| Vocoder | - | - | - | ch=128 |
+All models are English (US) voices from the [Piper](https://github.com/rhasspy/piper) project:
+- `nano` - Amy (low quality, 16kHz)
+- `small` - Lessac (medium quality, 22kHz)
+- `high` - Lessac (high quality, 22kHz)
 
 ---
 
-## Benchmarks
+## Use Cases
 
-Measured on a 2023 Intel i7-1260P laptop (no GPU, single thread).
-
-### Real-Time Factor by text length
-
-| Text length | nano RTF | small RTF |
-|-------------|---------|----------|
-| 10 words | 0.06x | 0.19x |
-| 25 words | 0.08x | 0.22x |
-| 50 words | 0.09x | 0.25x |
-| 100 words | 0.10x | 0.28x |
-
-### Memory usage
-
-| Variant | Peak RAM during inference |
-|---------|--------------------------|
-| nano | ~210 MB |
-| small | ~580 MB |
-
-### Comparison to alternatives (single-speaker English, CPU-only)
-
-| System | Params | Size | RTF (i7) | Open weights |
-|--------|--------|------|----------|-------------|
-| **NanoVox nano** | 14M | 18MB | 0.08x | Yes |
-| **NanoVox small** | 40M | 52MB | 0.22x | Yes |
-| Coqui TTS | 80M+ | 120MB+ | 0.9x | Yes |
-| Mozilla TTS | 100M+ | 150MB+ | 1.2x | Yes |
-| espeak-ng | N/A | <1MB | <0.01x | Yes (rule-based) |
+- **AI agents** that need to speak (OpenClaw, LangChain, AutoGPT)
+- **Accessibility** - add voice to any Python app
+- **Content pipelines** - generate voiceovers in CI/CD
+- **IoT / edge** - speech on Raspberry Pi, Jetson, any ARM device
+- **Prototyping** - test voice UX without cloud vendor lock-in
+- **Podcasts / narration** - batch-generate audio from scripts
+- **Notifications** - voice alerts from monitoring systems
+- **Offline apps** - no internet required after first model download
 
 ---
 
 ## API Reference
 
-### `speak(text, output, model, speed, device)`
-
-One-line TTS synthesis.
+### `speak(text, output, model, speed)`
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
 | `text` | str | required | Text to synthesize |
-| `output` | str | `"output.wav"` | Output WAV file path |
-| `model` | str | `"nano"` | Model variant: `"nano"` or `"small"` |
-| `speed` | float | `1.0` | Speech speed (0.5=slow, 2.0=fast) |
-| `device` | str | `"cpu"` | Compute device (always cpu) |
+| `output` | str | `"output.wav"` | Output file path |
+| `model` | str | `"nano"` | `"nano"`, `"small"`, or `"high"` |
+| `speed` | float | `1.0` | Speech rate (0.5 = slow, 2.0 = fast) |
 
 Returns the output file path.
 
-### `NanoVoxTTS(model, device, use_cached_weights)`
+### `synthesize(text, output, model, speed)`
 
-Full TTS class for repeated synthesis.
+Alias for `speak()` with identical signature.
 
-```python
-tts = NanoVoxTTS(
-    model="nano",           # "nano" or "small"
-    device="cpu",           # always cpu
-    use_cached_weights=True # auto-download pre-trained weights
-)
-tts.speak(text, output="out.wav", speed=1.0)
-```
-
-### CLI options
-
-```
-nanovox [TEXT] [-o OUTPUT] [-m {nano,small}] [-s SPEED] [--info] [-v]
-```
-
----
-
-## Environment Variables
+### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NANOVOX_CACHE` | `~/.cache/nanovox` | Directory for downloaded model weights |
+| `NANOVOX_CACHE` | `~/.cache/nanovox` | Model download directory |
 
 ---
 
-## Training
+## How It Works
 
-NanoVox models were trained on a subset of [LJ Speech](https://keithito.com/LJ-Speech-Dataset/)
-(public domain, single-speaker English).
+NanoVox wraps [Piper TTS](https://github.com/rhasspy/piper) ONNX voice models with:
 
-To train on your own data:
+1. **Automatic model management** - downloads, caches, and loads the right model
+2. **Simple Python API** - no config files, no boilerplate
+3. **CLI tool** - shell one-liner for scripting
 
-```bash
-# Coming in v0.2.0 - training scripts and documentation
-# For now: see nanovox/model.py for architecture details
-# and standard PyTorch training loops apply
-```
-
-Training details:
-- Optimizer: AdamW, lr=1e-4, weight decay=0.01
-- Batch size: 32 sequences
-- Total steps: 100k (nano), 200k (small)
-- Hardware: single A100 (for pre-training; not required for inference)
+The ONNX runtime runs inference on CPU without PyTorch or TensorFlow. Models are neural network voices trained on the LJSpeech dataset.
 
 ---
 
 ## Contributing
 
-Pull requests welcome. Key areas:
+PRs welcome. Ideas:
 
-1. **Better phonemizer** - integrate `phonemizer` + `espeak-ng` for improved pronunciation
-2. **Multi-speaker** - speaker embedding support
-3. **Training scripts** - end-to-end training on LJ Speech and custom data
-4. **ONNX export** - for deployment without PyTorch
-5. **More languages** - extend tokenizer + train multilingual models
+- **More voices** - add different speakers, accents, languages
+- **Streaming output** - real-time audio generation
+- **SSML support** - pauses, emphasis, pronunciation control
+- **Multi-language** - extend beyond English
 
 ```bash
-# Dev setup
 git clone https://github.com/ThankNIXlater/nanovox
 cd nanovox
-pip install -e ".[dev,audio]"
-pytest tests/
+pip install -e ".[dev]"
 ```
 
 ---
@@ -301,14 +164,4 @@ MIT - see [LICENSE](LICENSE).
 
 ---
 
-## Citation
-
-```bibtex
-@software{nanovox2026,
-  author = {NanoVox Contributors},
-  title = {NanoVox: Lightweight CPU-native Text-to-Speech},
-  year = {2026},
-  url = {https://github.com/ThankNIXlater/nanovox},
-  license = {MIT}
-}
-```
+**Built by [Nix](https://nixus.pro) - independent AI intelligence.**

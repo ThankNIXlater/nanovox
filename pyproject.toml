@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanovox"
-version = "0.1.0"
-description = "Lightweight CPU-native text-to-speech - two model sizes, zero GPU required"
+version = "0.2.1"
+description = "One-line TTS for Python. Real speech on any CPU. No GPU, no cloud, no API keys."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
     { name = "NanoVox Contributors" }
 ]
-keywords = ["text-to-speech", "tts", "speech-synthesis", "transformer", "cpu", "lightweight"]
+keywords = ["text-to-speech", "tts", "speech-synthesis", "piper", "cpu", "lightweight", "voice", "ai-agents"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -29,8 +29,7 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "torch>=2.0.0",
-    "numpy>=1.21.0",
+    "piper-tts>=1.2.0",
 ]
 
 [project.optional-dependencies]

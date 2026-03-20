@@ -4,7 +4,7 @@ NanoVox command-line interface.
 Usage:
     nanovox "Hello world"
     nanovox "Hello world" -o hello.wav
-    nanovox "Hello world" --model small --speed 0.9
+    nanovox "Hello world" --model high --speed 0.9
     nanovox --info
 """
 
@@ -16,18 +16,19 @@ import time
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="nanovox",
-        description="NanoVox - Lightweight CPU-native text-to-speech",
+        description="NanoVox - One-line TTS. Real speech on any CPU.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   nanovox "Hello world"
   nanovox "Hello world" -o greeting.wav
-  nanovox "The quick brown fox" --model small --speed 0.85
+  nanovox "The quick brown fox" --model high --speed 0.85
   nanovox --info
 
 Models:
-  nano   ~14M params, fastest, smallest (default)
-  small  ~40M params, higher quality
+  nano   ~15MB, fastest (default)
+  small  ~61MB, balanced quality
+  high   ~109MB, best quality
         """,
     )
 
@@ -45,7 +46,7 @@ Models:
     parser.add_argument(
         "-m", "--model",
         default="nano",
-        choices=["nano", "small"],
+        choices=["nano", "small", "high"],
         help="Model variant (default: nano)",
     )
     parser.add_argument(
@@ -54,12 +55,6 @@ Models:
         default=1.0,
         metavar="RATE",
         help="Speech speed multiplier, e.g. 0.8 for slower (default: 1.0)",
-    )
-    parser.add_argument(
-        "--device",
-        default="cpu",
-        choices=["cpu"],
-        help="Compute device (always cpu for NanoVox)",
     )
     parser.add_argument(
         "--info",
@@ -74,32 +69,22 @@ Models:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 0.1.0",
+        version="%(prog)s 0.2.1",
     )
 
     return parser
 
 
 def print_info():
-    """Print model parameter counts and config."""
-    from .config import NANO_CONFIG, SMALL_CONFIG
-    from .model import NanoVoxModel
-    from .vocoder import build_vocoder
+    """Print available voice models."""
+    from .inference import VOICES
 
-    print("NanoVox Model Info")
+    print("NanoVox v0.2.1 - Available Models")
     print("=" * 50)
 
-    for name, cfg in [("nano", NANO_CONFIG), ("small", SMALL_CONFIG)]:
-        m = NanoVoxModel(cfg)
-        v = build_vocoder(cfg.vocoder)
-        mp = m.count_parameters()
-        vp = v.count_parameters()
-        total = mp + vp
-        print(f"\nVariant : {name}")
-        print(f"  TTS model  : {mp:>12,} params ({mp/1e6:.1f}M)")
-        print(f"  Vocoder    : {vp:>12,} params ({vp/1e6:.1f}M)")
-        print(f"  Total      : {total:>12,} params ({total/1e6:.1f}M)")
-        print(f"  Sample rate: {cfg.sample_rate} Hz")
+    for name, voice in VOICES.items():
+        print(f"\n  {name:8s} - {voice['description']}")
+        print(f"           Model: {voice['model']}")
 
     print()
 
@@ -117,7 +102,6 @@ def main():
         return 0
 
     if not args.text:
-        # Read from stdin if piped
         if not sys.stdin.isatty():
             args.text = sys.stdin.read().strip()
         else:
@@ -139,7 +123,6 @@ def main():
             output=args.output,
             model=args.model,
             speed=args.speed,
-            device=args.device,
         )
         elapsed = time.time() - t0
         print(f"[NanoVox] Saved to: {out} ({elapsed:.2f}s)", file=sys.stderr)
