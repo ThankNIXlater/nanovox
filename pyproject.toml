@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "nanovox"
+version = "0.1.0"
+description = "Lightweight CPU-native text-to-speech - two model sizes, zero GPU required"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "NanoVox Contributors" }
+]
+keywords = ["text-to-speech", "tts", "speech-synthesis", "transformer", "cpu", "lightweight"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.21.0",
+]
+
+[project.optional-dependencies]
+audio = [
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "isort>=5.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+nanovox = "nanovox.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ThankNIXlater/nanovox"
+Repository = "https://github.com/ThankNIXlater/nanovox"
+Issues = "https://github.com/ThankNIXlater/nanovox/issues"
+Documentation = "https://github.com/ThankNIXlater/nanovox#readme"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nanovox*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["nanovox"]
+omit = ["tests/*"]
