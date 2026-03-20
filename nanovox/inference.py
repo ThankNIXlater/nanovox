@@ -26,7 +26,13 @@ VOICES = {
         "model": "en_US-lessac-medium.onnx",
         "config": "en_US-lessac-medium.onnx.json",
         "url_base": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium",
-        "description": "Higher quality (~61MB model)",
+        "description": "Balanced quality (~61MB model)",
+    },
+    "high": {
+        "model": "en_US-lessac-high.onnx",
+        "config": "en_US-lessac-high.onnx.json",
+        "url_base": "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/high",
+        "description": "Highest quality (~109MB model, 22kHz)",
     },
 }
 
